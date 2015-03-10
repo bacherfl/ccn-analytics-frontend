@@ -213,7 +213,7 @@ function statisticsController($scope,$http) {
         }
         var min = ss.min(data);
         var lowerQuantile = ss.quantile(data, 0.25);
-        var median = ss.median(data);
+        var median = ss.average(data);
         var upperQuantile = ss.quantile(data, 0.75);
         var max = ss.max(data);
         return [min, lowerQuantile, median, upperQuantile, max];
@@ -234,6 +234,10 @@ function statisticsController($scope,$http) {
 
             title: {
                 text: 'Satisfaction Rate'
+            },
+
+            tooltip: {
+                yDecimals: 2
             },
 
             legend: {
@@ -283,6 +287,10 @@ function statisticsController($scope,$http) {
                 enabled: false
             },
 
+            tooltip: {
+                yDecimals: 2
+            },
+
             xAxis: {
                 categories: $scope.strategies,
                 title: {
@@ -292,7 +300,7 @@ function statisticsController($scope,$http) {
 
             yAxis: {
                 title: {
-                    text: 'RTT'
+                    text: 'RTT [ms]'
                 }
             },
 
@@ -332,7 +340,8 @@ function statisticsController($scope,$http) {
                 }
             },
             tooltip: {
-                valueSuffix: ''
+                valueSuffix: '',
+                yDecimals: 2
             },
             plotOptions: {
                 bar: {
@@ -376,7 +385,7 @@ function statisticsController($scope,$http) {
             yAxis: {
                 min: 0,
                 title: {
-                    text: 'RTT',
+                    text: 'RTT [ms]',
                     align: 'high'
                 },
                 labels: {
@@ -384,7 +393,7 @@ function statisticsController($scope,$http) {
                 }
             },
             tooltip: {
-                valueSuffix: ''
+                valueSuffix: ' ms'
             },
             plotOptions: {
                 bar: {
