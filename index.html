@@ -21,7 +21,6 @@
     <script src="http://code.highcharts.com/highcharts-more.js"></script>
     <script src="http://code.highcharts.com/modules/exporting.js"></script>
     <script src="assets/js/simple_statistics.js"></script>
-    <script src="assets/js/statisticsController.js"></script>
 </head>
 
 <body ng-app="" ng-controller="statisticsController">
@@ -189,6 +188,28 @@
                 </div>
             </div>
 
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            Satisfaction Rate per Period
+                        </div>
+                        <div class="panel-body">
+                            <div id="satisfactionRatePeriodContainer" style="height: 400px; margin: auto; min-width: 100%; max-width: 100%"></div>
+                        </div>
+                    </div>
+                </div><div class="col-md-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            RTT per Period
+                        </div>
+                        <div class="panel-body">
+                            <div id="RTTPeriodContainer" style="height: 400px; margin: auto; min-width: 100%; max-width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <footer><p>All right reserved. Template by: <a href="http://webthemez.com">WebThemez</a></p></footer>
         </div>
         <!-- /. PAGE INNER  -->
@@ -207,7 +228,7 @@
 <!-- Morris Chart Js -->
 <script src="assets/js/morris/raphael-2.1.0.min.js"></script>
 
-
+<script src="assets/js/statisticsController.js"></script>
 </body>
 
 </html>

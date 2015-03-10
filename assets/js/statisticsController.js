@@ -1,61 +1,43 @@
 'use strict';
+
+var baseUrl = "http://127.0.0.1:8080";
+
 function statisticsController($scope,$http) {
 
     $scope.refresh = function () {
-        $http.get("http://127.0.0.1:8080/statistics/strategies")
+        $http.get(baseUrl + "/statistics/strategies")
             .success(function(response) {
                 $scope.strategies = response;
             });
-        $http.get("http://127.0.0.1:8080/statistics")
+        $http.get(baseUrl + "/statistics")
             .success(function(response) {
 
                 $scope.simulationRuns = response;
                 $scope.lastRefresh = new Date().getTime();
                 setTimeout(function() {
                     $scope.refresh()
-                }, 60000);
+                }, 600000);
                 $scope.updateChart();
             });
     }
 
     $scope.refreshSince = function(tstamp) {
-        $http.get("http://127.0.0.1:8080/statistics/strategies")
+        $http.get(baseUrl + "/statistics/strategies")
             .success(function(response) {
                 $scope.strategies = response;
             });
 
-        $http.get("http://127.0.0.1:8080/statistics/since/" + tstamp)
+        $http.get(baseUrl + "/statistics/since/" + tstamp)
             .success(function(response) {
                 $scope.simulationRuns = response;
                 $scope.lastRefresh = new Date().getTime();
                 setTimeout(function() {
                     $scope.refresh($scope.lastRefresh)
-                }, 10000);
+                }, 600000);
             });
     }
 
     $scope.refresh();
-
-    $scope.options = {
-        chart: {
-            type: 'parallelCoordinates',
-            height: 450,
-            margin: {
-                top: 30,
-                right: 40,
-                bottom: 50,
-                left: 0
-            },
-            dimensions: [
-                "sdnCacheDownloadRate",
-                "minSatRatio",
-                "interestInterval",
-                "enablePrefetching",
-                "averageSatisfactionRate",
-                "averageRtt",
-            ]
-        }
-    };
 
     $scope.averageSatRateByType = function(type) {
         var sum = 0.0;
@@ -157,6 +139,71 @@ function statisticsController($scope,$http) {
         return data;
     }
 
+    $scope.getAvgSatRatesForPeriod = function(type, periodNr) {
+        var data = [];
+        angular.forEach($scope.simulationRuns, function(sr) {
+           if ((sr.completed) && (sr.strategyName == type)) {
+               if (sr.averageSatisfactionRate > 0) {
+                   angular.forEach(sr.nodeStatistics, function(node) {
+                       angular.forEach(node.periods, function(period) {
+                            if (period.seqNr == periodNr) {
+                                data.push(period.averageSatisfactionRate);
+                            }
+                       });
+                   });
+               }
+           }
+        });
+        return data;
+    }
+
+    $scope.getAvgRttsForPeriod = function(type, periodNr) {
+        var data = [];
+        angular.forEach($scope.simulationRuns, function(sr) {
+            if ((sr.completed) && (sr.strategyName == type)) {
+                if (sr.averageSatisfactionRate > 0) {
+                    angular.forEach(sr.nodeStatistics, function(node) {
+                        angular.forEach(node.periods, function(period) {
+                            if (period.seqNr == periodNr) {
+                                data.push(period.averageRtt);
+                            }
+                        });
+                    });
+                }
+            }
+        });
+        return data;
+    }
+
+    $scope.getBarChartValues = function(metric, nrPeriods) {
+        var medianSeries = [];
+        var errorSeries = [];
+        angular.forEach($scope.strategies, function(strategy) {
+            var medianSerie = {name: strategy, type: 'bar', data: []};
+            var errorSerie = {name: strategy, type: 'error', data: []};
+            for (var i = 1; i <= nrPeriods; i++) {
+                if (metric == "sat") {
+                    var tmp = $scope.getAvgSatRatesForPeriod(strategy, i);
+                    medianSerie.data.push(ss.average(tmp));
+                    var error = [];
+                    error.push(ss.quantile(tmp, 0.25));
+                    error.push(ss.quantile(tmp, 0.75));
+                    errorSerie.data.push(error);
+                } else if (metric == "rtt") {
+                    var tmp = $scope.getAvgRttsForPeriod(strategy, i);
+                    medianSerie.data.push(ss.median(tmp));
+                    var error = [];
+                    error.push(ss.quantile(tmp, 0.25));
+                    error.push(ss.quantile(tmp, 0.75));
+                    errorSerie.data.push(error);
+                }
+            }
+            medianSeries.push(medianSerie);
+            errorSeries.push(errorSerie);
+        });
+        return [medianSeries, errorSeries];
+    }
+
     $scope.getBoxPlotValues = function(metric, type) {
         var data;
         if (metric == "sat") {
@@ -256,7 +303,111 @@ function statisticsController($scope,$http) {
                     headerFormat: '<em>Strategy {point.key}</em><br/>'
                 }
             }]
+        });
 
+        var barChartValues = $scope.getBarChartValues("sat", 4);
+
+        angular.element('#satisfactionRatePeriodContainer').highcharts({
+            chart: {
+                type: 'bar'
+            },
+            title: {
+                text: 'Satisfaction Rate per Period'
+            },
+            xAxis: {
+                categories: ['1', '2', '3', '4'],   //TODO dynamically set periods
+                title: {
+                    text: null
+                }
+            },
+            yAxis: {
+                min: 0,
+                max: 1.5,
+                title: {
+                    text: 'Satisfaction Rate',
+                    align: 'high'
+                },
+                labels: {
+                    overflow: 'justify'
+                }
+            },
+            tooltip: {
+                valueSuffix: ''
+            },
+            plotOptions: {
+                bar: {
+                    dataLabels: {
+                        enabled: true
+                    }
+                }
+            },
+            legend: {
+                layout: 'vertical',
+                align: 'right',
+                verticalAlign: 'top',
+                x: -40,
+                y: 100,
+                floating: true,
+                borderWidth: 1,
+                backgroundColor: ((Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'),
+                shadow: true
+            },
+            credits: {
+                enabled: false
+            },
+            series: barChartValues[0]
+        });
+
+        var barChartValuesRTT = $scope.getBarChartValues("rtt", 4);
+
+        angular.element('#RTTPeriodContainer').highcharts({
+            chart: {
+                type: 'bar'
+            },
+            title: {
+                text: 'RTT per Period'
+            },
+            xAxis: {
+                categories: ['1', '2', '3', '4'],   //TODO dynamically set periods
+                title: {
+                    text: null
+                }
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'RTT',
+                    align: 'high'
+                },
+                labels: {
+                    overflow: 'justify'
+                }
+            },
+            tooltip: {
+                valueSuffix: ''
+            },
+            plotOptions: {
+                bar: {
+                    dataLabels: {
+                        enabled: true
+                    }
+                }
+            },
+            legend: {
+                layout: 'vertical',
+                align: 'right',
+                verticalAlign: 'top',
+                x: -40,
+                y: 100,
+                floating: true,
+                borderWidth: 1,
+                backgroundColor: ((Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'),
+                shadow: true
+            },
+            credits: {
+                enabled: false
+            },
+            series: barChartValuesRTT[0]
         });
     }
 }
