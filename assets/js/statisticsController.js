@@ -3,41 +3,39 @@
 var baseUrl = "http://127.0.0.1:8080";
 
 function statisticsController($scope,$http) {
-
-    $scope.refresh = function () {
-        $http.get(baseUrl + "/statistics/strategies")
+    $scope.activeSession = false;
+    $scope.init = function () {
+        $http.get(baseUrl + "/statistics/sessions")
             .success(function(response) {
-                $scope.strategies = response;
+                $scope.sessions = response;
             });
-        $http.get(baseUrl + "/statistics")
-            .success(function(response) {
+        setTimeout(function() {
+            $scope.init()
+        }, 3600000);
+    }
 
+    $scope.refresh = function() {
+        $http.get(baseUrl + "/statistics/sessions/" + $scope.activeSession)
+            .success(function(response) {
                 $scope.simulationRuns = response;
-                $scope.lastRefresh = new Date().getTime();
+                $scope.sessionInfo = $scope.simulationRuns[0];
                 setTimeout(function() {
                     $scope.refresh()
-                }, 600000);
+                }, 180000);
                 $scope.updateChart();
             });
-    }
-
-    $scope.refreshSince = function(tstamp) {
-        $http.get(baseUrl + "/statistics/strategies")
+        $http.get(baseUrl + "/statistics/sessions/" + $scope.activeSession + "/strategies")
             .success(function(response) {
                 $scope.strategies = response;
             });
-
-        $http.get(baseUrl + "/statistics/since/" + tstamp)
-            .success(function(response) {
-                $scope.simulationRuns = response;
-                $scope.lastRefresh = new Date().getTime();
-                setTimeout(function() {
-                    $scope.refresh($scope.lastRefresh)
-                }, 600000);
-            });
     }
 
-    $scope.refresh();
+    $scope.loadSession = function(sessionId) {
+        $scope.activeSession = sessionId;
+        $scope.refresh();
+    }
+
+    $scope.init();
 
     $scope.averageSatRateByType = function(type) {
         var sum = 0.0;
@@ -176,32 +174,35 @@ function statisticsController($scope,$http) {
     }
 
     $scope.getBarChartValues = function(metric, nrPeriods) {
-        var medianSeries = [];
-        var errorSeries = [];
+        var series = [];
+        var drilldowns = {};
         angular.forEach($scope.strategies, function(strategy) {
-            var medianSerie = {name: strategy, type: 'bar', data: []};
-            var errorSerie = {name: strategy, type: 'error', data: []};
+            var drilldown = {};
+            var medianSerie = {name: strategy, type: 'column', data: []};
+            var errorSerie = {name: strategy, type: 'errorbar', data: []};
             for (var i = 1; i <= nrPeriods; i++) {
+                var tmp;
                 if (metric == "sat") {
-                    var tmp = $scope.getAvgSatRatesForPeriod(strategy, i);
-                    medianSerie.data.push(ss.average(tmp));
-                    var error = [];
-                    error.push(ss.quantile(tmp, 0.25));
-                    error.push(ss.quantile(tmp, 0.75));
-                    errorSerie.data.push(error);
+                    tmp = $scope.getAvgSatRatesForPeriod(strategy, i);
+
                 } else if (metric == "rtt") {
-                    var tmp = $scope.getAvgRttsForPeriod(strategy, i);
-                    medianSerie.data.push(ss.median(tmp));
-                    var error = [];
-                    error.push(ss.quantile(tmp, 0.25));
-                    error.push(ss.quantile(tmp, 0.75));
-                    errorSerie.data.push(error);
+                    tmp = $scope.getAvgRttsForPeriod(strategy, i);
                 }
+                medianSerie.data.push(ss.mean(tmp));
+                var error = [];
+                error.push(ss.quantile(tmp, 0.025));
+                error.push(ss.quantile(tmp, 0.975));
+                errorSerie.data.push(error);
+
+                drilldown['name'] = strategy;
+                drilldown['data'] = tmp;
+                drilldowns[strategy] = drilldown;
             }
-            medianSeries.push(medianSerie);
-            errorSeries.push(errorSerie);
+            series.push(medianSerie);
+            series.push(errorSerie);
         });
-        return [medianSeries, errorSeries];
+        //return [medianSeries, errorSeries];
+        return series;
     }
 
     $scope.getBoxPlotValues = function(metric, type) {
@@ -212,9 +213,9 @@ function statisticsController($scope,$http) {
             data = $scope.getSortedAvgRTTs(type);
         }
         var min = ss.min(data);
-        var lowerQuantile = ss.quantile(data, 0.25);
-        var median = ss.average(data);
-        var upperQuantile = ss.quantile(data, 0.75);
+        var lowerQuantile = ss.quantile(data, 0.025);
+        var median = ss.median(data);
+        var upperQuantile = ss.quantile(data, 0.975);
         var max = ss.max(data);
         return [min, lowerQuantile, median, upperQuantile, max];
     }
@@ -317,7 +318,52 @@ function statisticsController($scope,$http) {
 
         angular.element('#satisfactionRatePeriodContainer').highcharts({
             chart: {
-                type: 'bar'
+                type: 'column',
+                events: {
+                    drilldown: function (e) {
+                        console.log(e);
+                        /*
+                        if (!e.seriesOptions) {
+
+                            var chart = this,
+                                drilldowns = {
+                                    1 : {
+                                        name: 'Animals',
+                                        data: [
+                                            ['Cows', 2],
+                                            ['Sheep', 3]
+                                        ]
+                                    },
+                                    'Fruits': {
+                                        name: 'Fruits',
+                                        data: [
+                                            ['Apples', 5],
+                                            ['Oranges', 7],
+                                            ['Bananas', 2]
+                                        ]
+                                    },
+                                    'Cars': {
+                                        name: 'Cars',
+                                        data: [
+                                            ['Toyota', 1],
+                                            ['Volkswagen', 2],
+                                            ['Opel', 5]
+                                        ]
+                                    }
+                                },
+                                series = drilldowns[e.point.name];
+
+                            // Show the loading label
+                            chart.showLoading('Simulating Ajax ...');
+
+                            setTimeout(function () {
+                                chart.hideLoading();
+                                chart.addSeriesAsDrilldown(e.point, series);
+                            }, 1000);
+                        }
+                        */
+                    }
+                }
             },
             title: {
                 text: 'Satisfaction Rate per Period'
@@ -351,7 +397,7 @@ function statisticsController($scope,$http) {
                 }
             },
             legend: {
-                layout: 'vertical',
+                layout: 'horizontal',
                 align: 'right',
                 verticalAlign: 'top',
                 x: -40,
@@ -364,14 +410,14 @@ function statisticsController($scope,$http) {
             credits: {
                 enabled: false
             },
-            series: barChartValues[0]
+            series: barChartValues
         });
 
         var barChartValuesRTT = $scope.getBarChartValues("rtt", 4);
 
         angular.element('#RTTPeriodContainer').highcharts({
             chart: {
-                type: 'bar'
+                //type: 'bar'
             },
             title: {
                 text: 'RTT per Period'
@@ -403,7 +449,7 @@ function statisticsController($scope,$http) {
                 }
             },
             legend: {
-                layout: 'vertical',
+                layout: 'horizontal',
                 align: 'right',
                 verticalAlign: 'top',
                 x: -40,
@@ -416,7 +462,7 @@ function statisticsController($scope,$http) {
             credits: {
                 enabled: false
             },
-            series: barChartValuesRTT[0]
+            series: barChartValuesRTT
         });
     }
 }
