@@ -188,10 +188,17 @@ function statisticsController($scope,$http) {
                 } else if (metric == "rtt") {
                     tmp = $scope.getAvgRttsForPeriod(strategy, i);
                 }
-                medianSerie.data.push(ss.mean(tmp));
+                var mean = ss.median(tmp);
+                var error = 1.96 * ss.standard_deviation(tmp) / Math.sqrt(tmp.length);
+                var lowerError = mean - error;
+                var upperError = mean + error;
+                medianSerie.data.push(mean);
                 var error = [];
-                error.push(ss.quantile(tmp, 0.025));
-                error.push(ss.quantile(tmp, 0.975));
+
+                error.push(ss.quantile(tmp, 0.25));
+                error.push(ss.quantile(tmp, 0.75));
+                //error.push(lowerError);
+                //error.push(upperError);
                 errorSerie.data.push(error);
 
                 drilldown['name'] = strategy;
@@ -207,24 +214,37 @@ function statisticsController($scope,$http) {
 
     $scope.getBoxPlotValues = function(metric, type) {
         var data;
+        var outliers = [];
         if (metric == "sat") {
             data = $scope.getSortedAvgSatRates(type);
         } else if (metric == "rtt") {
             data = $scope.getSortedAvgRTTs(type);
         }
-        var min = ss.min(data);
-        var lowerQuantile = ss.quantile(data, 0.025);
+        var min = ss.quantile(data, 0.025);
+        var lowerQuantile = ss.quantile(data, 0.25);
         var median = ss.median(data);
-        var upperQuantile = ss.quantile(data, 0.975);
-        var max = ss.max(data);
-        return [min, lowerQuantile, median, upperQuantile, max];
+        var upperQuantile = ss.quantile(data, 0.75);
+        var max = ss.quantile(data, 0.975);
+        for (var i = 0; i < data.length; i++) {
+            if ((data[i] < min) || (data[i] > max)) {
+                outliers.push(data[i]);
+            }
+        }
+        return [[min, lowerQuantile, median, upperQuantile, max], outliers];
     }
 
     $scope.updateChart = function() {
         var observations = [];
-
+        var outliers = [];
+        var i = 0;
         angular.forEach($scope.strategies, function(strategy) {
-            observations.push($scope.getBoxPlotValues("sat", strategy));
+            var tmp = $scope.getBoxPlotValues("sat", strategy);
+            observations.push(tmp[0]);
+            //outliers = outliers.concat(tmp[1]);
+            for (var j = 0; j < tmp[1].length; j++) {
+                outliers.push([i, tmp[1][j]]);
+            }
+            i++;
         });
 
         angular.element('#satisfactionRateContainer').highcharts({
@@ -264,14 +284,33 @@ function statisticsController($scope,$http) {
                 tooltip: {
                     headerFormat: '<em>Strategy {point.key}</em><br/>'
                 }
+            }, {
+                name: 'Outlier',
+                color: Highcharts.getOptions().colors[0],
+                type: 'scatter',
+                data: outliers,
+                marker: {
+                    fillColor: 'white',
+                    lineWidth: 1,
+                    lineColor: Highcharts.getOptions().colors[0]
+                },
+                tooltip: {
+                    pointFormat: '{point.y}'
+                }
             }]
-
         });
 
         var observations = [];
-
+        var outliers = [];
+        var i = 0;
         angular.forEach($scope.strategies, function(strategy) {
-            observations.push($scope.getBoxPlotValues("rtt", strategy));
+            var tmp = $scope.getBoxPlotValues("rtt", strategy);
+            observations.push(tmp[0]);
+            //outliers = outliers.concat(tmp[1]);
+            for (var j = 0; j < tmp[1].length; j++) {
+                outliers.push([i, tmp[1][j]]);
+            }
+            i++;
         });
 
         angular.element('#RTTContainer').highcharts({
@@ -311,6 +350,19 @@ function statisticsController($scope,$http) {
                 tooltip: {
                     headerFormat: '<em>Strategy {point.key}</em><br/>'
                 }
+            }, {
+                name: 'Outlier',
+                color: Highcharts.getOptions().colors[0],
+                type: 'scatter',
+                data: outliers,
+                marker: {
+                    fillColor: 'white',
+                    lineWidth: 1,
+                    lineColor: Highcharts.getOptions().colors[0]
+                },
+                tooltip: {
+                    pointFormat: '{point.y} ms'
+                }
             }]
         });
 
@@ -318,52 +370,7 @@ function statisticsController($scope,$http) {
 
         angular.element('#satisfactionRatePeriodContainer').highcharts({
             chart: {
-                type: 'column',
-                events: {
-                    drilldown: function (e) {
-                        console.log(e);
-                        /*
-                        if (!e.seriesOptions) {
-
-                            var chart = this,
-                                drilldowns = {
-                                    1 : {
-                                        name: 'Animals',
-                                        data: [
-                                            ['Cows', 2],
-                                            ['Sheep', 3]
-                                        ]
-                                    },
-                                    'Fruits': {
-                                        name: 'Fruits',
-                                        data: [
-                                            ['Apples', 5],
-                                            ['Oranges', 7],
-                                            ['Bananas', 2]
-                                        ]
-                                    },
-                                    'Cars': {
-                                        name: 'Cars',
-                                        data: [
-                                            ['Toyota', 1],
-                                            ['Volkswagen', 2],
-                                            ['Opel', 5]
-                                        ]
-                                    }
-                                },
-                                series = drilldowns[e.point.name];
-
-                            // Show the loading label
-                            chart.showLoading('Simulating Ajax ...');
-
-                            setTimeout(function () {
-                                chart.hideLoading();
-                                chart.addSeriesAsDrilldown(e.point, series);
-                            }, 1000);
-                        }
-                        */
-                    }
-                }
+                type: 'column'
             },
             title: {
                 text: 'Satisfaction Rate per Period'
