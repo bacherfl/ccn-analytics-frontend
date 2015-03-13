@@ -19,7 +19,7 @@ function statisticsController($scope,$http) {
             .success(function(response) {
                 $scope.simulationRuns = response;
                 $scope.sessionInfo = $scope.simulationRuns[0];
-                setTimeout(function() {
+                $scope.refreshEvent = setTimeout(function() {
                     $scope.refresh()
                 }, 180000);
                 $scope.updateChart();
@@ -32,6 +32,8 @@ function statisticsController($scope,$http) {
 
     $scope.loadSession = function(sessionId) {
         $scope.activeSession = sessionId;
+        if ($scope.refreshEvent)
+            clearTimeout($scope.refreshEvent);
         $scope.refresh();
     }
 
@@ -188,17 +190,17 @@ function statisticsController($scope,$http) {
                 } else if (metric == "rtt") {
                     tmp = $scope.getAvgRttsForPeriod(strategy, i);
                 }
-                var mean = ss.median(tmp);
+                var mean = ss.mean(tmp);
                 var error = 1.96 * ss.standard_deviation(tmp) / Math.sqrt(tmp.length);
                 var lowerError = mean - error;
                 var upperError = mean + error;
                 medianSerie.data.push(mean);
                 var error = [];
 
-                error.push(ss.quantile(tmp, 0.25));
-                error.push(ss.quantile(tmp, 0.75));
-                //error.push(lowerError);
-                //error.push(upperError);
+                //error.push(ss.quantile(tmp, 0.25));
+                //error.push(ss.quantile(tmp, 0.75));
+                error.push(lowerError);
+                error.push(upperError);
                 errorSerie.data.push(error);
 
                 drilldown['name'] = strategy;
