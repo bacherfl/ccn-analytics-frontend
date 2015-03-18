@@ -144,12 +144,15 @@ function statisticsController($scope,$http) {
         angular.forEach($scope.simulationRuns, function(sr) {
            if ((sr.completed) && (sr.strategyName == type)) {
                if (sr.averageSatisfactionRate > 0) {
+                   var tmp = [];
                    angular.forEach(sr.nodeStatistics, function(node) {
                        angular.forEach(node.periods, function(period) {
                             if (period.seqNr == periodNr) {
-                                data.push(period.averageSatisfactionRate);
+                                //data.push(period.averageSatisfactionRate);
+                                tmp.push(period.averageSatisfactionRate);
                             }
                        });
+                       data.push(ss.average(tmp));
                    });
                }
            }
@@ -162,13 +165,16 @@ function statisticsController($scope,$http) {
         angular.forEach($scope.simulationRuns, function(sr) {
             if ((sr.completed) && (sr.strategyName == type)) {
                 if (sr.averageSatisfactionRate > 0) {
+                    var tmp = [];
                     angular.forEach(sr.nodeStatistics, function(node) {
                         angular.forEach(node.periods, function(period) {
                             if (period.seqNr == periodNr) {
-                                data.push(period.averageRtt);
+                                //data.push(period.averageRtt);
+                                tmp.push(period.averageRtt);
                             }
                         });
                     });
+                    data.push(ss.average(tmp));
                 }
             }
         });
@@ -256,7 +262,7 @@ function statisticsController($scope,$http) {
             },
 
             title: {
-                text: 'Satisfaction Rate'
+                text: 'Overall Satisfaction Rate'
             },
 
             tooltip: {
