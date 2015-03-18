@@ -26,6 +26,7 @@ function statisticsController($scope,$http) {
             });
         $http.get(baseUrl + "/statistics/sessions/" + $scope.activeSession + "/strategies")
             .success(function(response) {
+                response.sort();
                 $scope.strategies = response;
             });
     }
