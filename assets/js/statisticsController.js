@@ -261,9 +261,12 @@ function statisticsController($scope,$http) {
             chart: {
                 type: 'boxplot'
             },
-
+            exporting: {
+                sourceHeight: 400,
+                sourceWidth: 400
+            },
             title: {
-                text: 'Overall Satisfaction Rate'
+                text: null
             },
 
             tooltip: {
@@ -284,7 +287,9 @@ function statisticsController($scope,$http) {
             yAxis: {
                 title: {
                     text: 'Sat. Rate'
-                }
+                },
+                max: 1.0,
+                min: 0.0
             },
 
             series: [{
@@ -327,9 +332,12 @@ function statisticsController($scope,$http) {
             chart: {
                 type: 'boxplot'
             },
-
+            exporting: {
+                sourceHeight: 400,
+                sourceWidth: 400
+            },
             title: {
-                text: 'RTT'
+                text: null
             },
 
             legend: {
@@ -350,7 +358,9 @@ function statisticsController($scope,$http) {
             yAxis: {
                 title: {
                     text: 'RTT [ms]'
-                }
+                },
+                max: 400,
+                min: 0
             },
 
             series: [{
@@ -381,8 +391,12 @@ function statisticsController($scope,$http) {
             chart: {
                 type: 'column'
             },
+            exporting: {
+                sourceHeight: 400,
+                sourceWidth: 400
+            },
             title: {
-                text: 'Satisfaction Rate per Period'
+                text: null
             },
             xAxis: {
                 categories: ['1', '2', '3', '4'],   //TODO dynamically set periods
@@ -392,7 +406,7 @@ function statisticsController($scope,$http) {
             },
             yAxis: {
                 min: 0,
-                max: 1.5,
+                max: 1.0,
                 title: {
                     text: 'Satisfaction Rate',
                     align: 'high'
@@ -412,6 +426,7 @@ function statisticsController($scope,$http) {
                     }
                 }
             },
+            /*
             legend: {
                 layout: 'horizontal',
                 align: 'right',
@@ -423,6 +438,7 @@ function statisticsController($scope,$http) {
                 backgroundColor: ((Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'),
                 shadow: true
             },
+            */
             credits: {
                 enabled: false
             },
@@ -435,8 +451,12 @@ function statisticsController($scope,$http) {
             chart: {
                 //type: 'bar'
             },
+            exporting: {
+                sourceHeight: 400,
+                sourceWidth: 400
+            },
             title: {
-                text: 'RTT per Period'
+                text: null
             },
             xAxis: {
                 categories: ['1', '2', '3', '4'],   //TODO dynamically set periods
@@ -446,6 +466,7 @@ function statisticsController($scope,$http) {
             },
             yAxis: {
                 min: 0,
+                max: 400,
                 title: {
                     text: 'RTT [ms]',
                     align: 'high'
@@ -464,6 +485,7 @@ function statisticsController($scope,$http) {
                     }
                 }
             },
+            /*
             legend: {
                 layout: 'horizontal',
                 align: 'right',
@@ -475,6 +497,7 @@ function statisticsController($scope,$http) {
                 backgroundColor: ((Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'),
                 shadow: true
             },
+            */
             credits: {
                 enabled: false
             },
